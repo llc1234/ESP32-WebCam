@@ -91,7 +91,7 @@ void setup() {
   
   server.begin();
 
-  // esp_sleep_enable_timer_wakeup(TIME_TO_SLEEP * uS_TO_S_FACTOR);
+  // esp_sleep_enable_timer_wakeup(5 * 1000000);
 
   // esp_deep_sleep_start();
   // esp_light_sleep_start();

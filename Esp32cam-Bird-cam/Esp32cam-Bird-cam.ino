@@ -95,6 +95,7 @@ void setup() {
 
   // esp_deep_sleep_start();
   // esp_light_sleep_start();
+  // esp_wifi_set_ps(WIFI_PS_MAX_MODEM);
 }
 
 

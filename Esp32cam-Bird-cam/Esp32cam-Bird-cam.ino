@@ -5,12 +5,11 @@
 #include <WebServer.h>
 #include <WiFi.h>
 #include <uri/UriBraces.h>
+#include <esp_wifi.h>
+#include <esp_sleep.h>
 
-#include "esp_sleep.h"
-
-
-#define WIFI_SSID ""
-#define WIFI_PASS ""
+#define WIFI_SSID "Dina2G"
+#define WIFI_PASS "janneerkul"
 
 esp32cam::Resolution initialResolution;
 
@@ -19,10 +18,13 @@ WebServer server(80);
 long width = 800;
 long height = 600;
 
+// Define how long to stay awake after serving a request
+const long ACTIVE_PERIOD_MS = 60000;
+unsigned long lastRequestTime = 0;
 
 void LiveStream() {
   auto r = esp32cam::Camera.listResolutions().find(width, height);
-  
+
   if (!esp32cam::Camera.changeResolution(r)) {
     Serial.printf("changeResolution(%ld,%ld) failure\n", width, height);
     server.send(500, "text/plain", "changeResolution error\n");
@@ -36,6 +38,8 @@ void LiveStream() {
   int nFrames = esp32cam::Camera.streamMjpeg(client);
   auto duration = millis() - startTime;
   Serial.printf("MJPEG streaming end: %dfrm %0.2ffps\n", nFrames, 1000.0 * nFrames / duration);
+  
+  lastRequestTime = millis();
 }
 
 void handleCapture() {
@@ -48,10 +52,22 @@ void handleCapture() {
   server.send(200, "image/jpeg");
   WiFiClient client = server.client();
   img->writeTo(client);
+
+  lastRequestTime = millis();
+}
+
+void enterDeepSleep() {
+  Serial.println("Entering sleep mode...");
+  delay(100);
+  esp_sleep_enable_timer_wakeup(1000000 * 60);
+  // esp_deep_sleep_start();
+  esp_light_sleep_start();
+  Serial.println("timer wakeup mode...");
+  lastRequestTime = millis();
 }
 
 void setup() {
-  Serial.begin(115200);
+  Serial.begin(9600);
   Serial.println();
   delay(2000);
 
@@ -64,7 +80,6 @@ void setup() {
     ESP.restart();
   }
   Serial.println("WiFi connected");
-
 
   initialResolution = esp32cam::Resolution::find(width, height);
 
@@ -80,24 +95,23 @@ void setup() {
     ESP.restart();
   }
   Serial.println("camera initialize success");
-  
 
   Serial.println("camera starting");
   Serial.print("http://");
   Serial.println(WiFi.localIP());
-  
+
   server.on("/stream", LiveStream);
   server.on("/capture", handleCapture);
   
   server.begin();
 
-  // esp_sleep_enable_timer_wakeup(5 * 1000000);
-
-  // esp_deep_sleep_start();
-  // esp_light_sleep_start();
+  lastRequestTime = millis();
 }
-
 
 void loop() {
   server.handleClient();
+
+  if (millis() - lastRequestTime > ACTIVE_PERIOD_MS) {
+    enterDeepSleep();
+  }
 }

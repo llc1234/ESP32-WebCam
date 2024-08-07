@@ -5,6 +5,13 @@
 #include <esp_wifi.h>
 #include <esp_sleep.h>
 
+
+IPAddress local_IP(192, 168, 10, 112); // Change to your desired static IP
+IPAddress gateway(192, 168, 10, 1);    // Change to your network gateway
+IPAddress subnet(255, 255, 255, 0);
+
+
+
 #define WIFI_SSID ""
 #define WIFI_PASS ""
 
@@ -20,6 +27,14 @@ const long ACTIVE_PERIOD_MS = 60000;
 unsigned long lastRequestTime = 0;
 
 void LiveStream() {
+  if (server.hasArg("w")) {
+    width = server.arg("w").toInt();
+  }
+
+  if (server.hasArg("h")) {
+    height = server.arg("h").toInt();
+  }
+    
   auto r = esp32cam::Camera.listResolutions().find(width, height);
 
   if (!esp32cam::Camera.changeResolution(r)) {
@@ -68,6 +83,10 @@ void setup() {
   Serial.println();
   delay(2000);
 
+  if (!WiFi.config(local_IP, gateway, subnet)) {
+    Serial.println("STA Failed to configure");
+  }
+
   WiFi.persistent(false);
   WiFi.mode(WIFI_STA);
   WiFi.begin(WIFI_SSID, WIFI_PASS);
@@ -105,10 +124,27 @@ void setup() {
   lastRequestTime = millis();
 }
 
+void checkWiFiConnection() {
+  if (WiFi.status() != WL_CONNECTED) {
+    Serial.println("WiFi connection lost. Reconnecting...");
+    WiFi.disconnect();
+
+    WiFi.begin(WIFI_SSID, WIFI_PASS);
+    while (WiFi.status() != WL_CONNECTED) {
+      delay(1000);
+      Serial.print(".");
+    }
+    Serial.println();
+    Serial.print("Connected! IP address: ");
+    Serial.println(WiFi.localIP());
+  }
+}
+
 void loop() {
   server.handleClient();
 
   if (millis() - lastRequestTime > ACTIVE_PERIOD_MS) {
+    checkWiFiConnection();
     enterDeepSleep();
   }
 }

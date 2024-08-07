@@ -13,13 +13,30 @@ void handleRoot() {
   server.send(200, "text/html", html);
 }
 
+void checkWiFiConnection() {
+  if (WiFi.status() != WL_CONNECTED) {
+    Serial.println("WiFi connection lost. Reconnecting...");
+    WiFi.disconnect();
+    WiFi.begin(ssid, password);
+    while (WiFi.status() != WL_CONNECTED) {
+      delay(500);
+      Serial.print(".");
+    }
+    Serial.println();
+    Serial.print("Connected! IP address: ");
+    Serial.println(WiFi.localIP());
+  }
+}
+
 void setup() {
   Serial.begin(9600);
+  delay(1000);
 
   // Connect to Wi-Fi
-  WiFi.begin(ssid, password);
   Serial.print("Connecting to ");
   Serial.print(ssid);
+  
+  WiFi.begin(ssid, password);
   while (WiFi.status() != WL_CONNECTED) {
     delay(500);
     Serial.print(".");
@@ -39,4 +56,5 @@ void setup() {
 void loop() {
   // Handle client requests
   server.handleClient();
+  checkWiFiConnection();
 }

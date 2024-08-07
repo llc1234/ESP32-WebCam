@@ -1,6 +1,13 @@
 #include <ESP8266WiFi.h>
 #include <ESP8266WebServer.h>
 
+
+
+IPAddress local_IP(192, 168, 10, 160);  // Change this to your desired static IP
+IPAddress gateway(192, 168, 10, 1);     // Set your network gateway
+IPAddress subnet(255, 255, 255, 0);
+
+
 // Replace with your network credentials
 const char* ssid = "";
 const char* password = "";
@@ -31,6 +38,10 @@ void checkWiFiConnection() {
 void setup() {
   Serial.begin(9600);
   delay(1000);
+
+  if (!WiFi.config(local_IP, gateway, subnet)) {
+    Serial.println("STA Failed to configure");
+  }
 
   // Connect to Wi-Fi
   Serial.print("Connecting to ");

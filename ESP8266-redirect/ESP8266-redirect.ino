@@ -26,7 +26,7 @@ void checkWiFiConnection() {
     WiFi.disconnect();
     WiFi.begin(ssid, password);
     while (WiFi.status() != WL_CONNECTED) {
-      delay(500);
+      delay(1000);
       Serial.print(".");
     }
     Serial.println();
